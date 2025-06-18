@@ -1,0 +1,4 @@
+businessObjectType,businessObjectId,baseObjectType,baseObjectId,status
+"Order","3b23bb4b-4ac7-4a24-ac02-aa10cabd842c","D","db969c86-addd-4203-8917-e1b81865b93b","U"
+"Invoice","2a0b6794-0c10-4635-8a03-3dd6bad68e08","D","db969c86-addd-4203-8917-e1b81865b93b","U"
+"Product","55c13d67-f777-428c-b629-5c4cad8ae9f7","D","35ad4333-5525-4e09-b145-0f1b85aff364","U"
