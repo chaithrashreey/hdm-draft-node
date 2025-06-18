@@ -79,46 +79,22 @@ module.exports = (srv) => {
         delete inputData.businessObjectId;
         delete inputData.businessObjectType;
 
-        //CreateHDMObjectDraft
-        // await fetch('http://localhost:4004/odata/v4/hdm/HDMObjects', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'Authorization': req.headers.authorization // forward auth if needed
-        //     },
-        //     body: JSON.stringify({
-        //        ...inputData,
-        //        baseObjectId
-        //     })
-        // });
+        let draft;
 
-       const data =  await srv.new(HDMObjects.drafts, {
+        cds.tx (async() => {
+             await srv.new(HDMObjects.drafts, {
                ...inputData,
                baseObjectId
             });
-       console.log("🚀 ~ srv.on ~ data:", data)
-       
-
-        //CreateRelationsDraft
-        // const res = await fetch('http://localhost:4004/odata/v4/hdm/HDMRelations', {
-        //     method: 'POST',
-        //     headers: {
-        //         'Content-Type': 'application/json',
-        //         'Authorization': req.headers.authorization // forward auth if needed
-        //     },
-        //     body: JSON.stringify({
-        //         baseObjectId,
-        //         baseObjectType,
-        //         businessObjectType,
-        //         businessObjectId
-        //     })
-        // });
-        const draft = await srv.new(HDMRelations.drafts, {
-            baseObjectId,
-            baseObjectType,
-            businessObjectType,
-            businessObjectId
+      
+        draft = await srv.new(HDMRelations.drafts, {
+                baseObjectId,
+                baseObjectType,
+                businessObjectType,
+                businessObjectId
+            })
         })
+       
 
         return draft;
     }catch(err){
@@ -161,35 +137,12 @@ module.exports = (srv) => {
         const relationDraftEntries = await SELECT.from(HDMRelations.drafts).where({
             businessObjectId,
             businessObjectType
-            });
-        console.log("🚀 ~ draftEntries ~ draftEntries:", draftEntries)
-
-        // const res = await fetch(`http://localhost:4004/odata/v4/hdm/HDMRelations?$filter=IsActiveEntity eq false and businessObjectId eq '${businessObjectId}' and businessObjectType eq '${businessObjectType}'`, {
-        //     headers: {
-        //         'Authorization': req.headers.authorization
-        //     }
-        //     });
-
-        //     const data = await res.json();
-            // const relations = data.value;
-            for(let eachRelation in relationDraftEntries){
-                const {baseObjectId, baseObjectType,ID} = relations[eachRelation];
-                await fetch(`http://localhost:4004/odata/v4/hdm/HDMObjects(baseObjectId='${baseObjectId}',baseObjectType='${baseObjectType}',IsActiveEntity=false)/draftActivate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': req.headers.authorization 
-                    }
-                });
-
-                 await fetch(`http://localhost:4004/odata/v4/hdm/HDMRelations(ID='${ID}',IsActiveEntity=false)/draftActivate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': req.headers.authorization 
-                    }
-                });
-
+        });
+    
+        for(let eachRelation in relationDraftEntries){
+            const { baseObjectId, baseObjectType, ID } = relationDraftEntries[eachRelation];
+            await srv.save(HDMObjects.drafts, { baseObjectId,baseObjectType })    // activate draft
+            await srv.save(HDMRelations.drafts, { ID }) 
         }
              
     })
@@ -197,31 +150,15 @@ module.exports = (srv) => {
      srv.on("discardDocumentWithLink", async(req) => {
         const { businessObjectType, businessObjectId } = req.data;
 
-        const res = await fetch(`http://localhost:4004/odata/v4/hdm/HDMRelations?$filter=IsActiveEntity eq false and businessObjectId eq '${businessObjectId}' and businessObjectType eq '${businessObjectType}'`, {
-            headers: {
-                'Authorization': req.headers.authorization
-            }
-            });
+         const relationDraftEntries = await SELECT.from(HDMRelations.drafts).where({
+            businessObjectId,
+            businessObjectType
+        });
 
-            const data = await res.json();
-            const relations = data.value;
-            for(let eachRelation in relations){
-                const {baseObjectId, baseObjectType,ID} = relations[eachRelation];
-                 await fetch(`http://localhost:4004/odata/v4/hdm/HDMRelations(ID='${ID}',IsActiveEntity=false)`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': req.headers.authorization 
-                    }
-                });
-
-                await fetch(`http://localhost:4004/odata/v4/hdm/HDMObjects(baseObjectId='${baseObjectId}',baseObjectType='${baseObjectType}',IsActiveEntity=false)`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': req.headers.authorization 
-                    }
-                });
+        for(let eachRelation in relationDraftEntries){
+            const { baseObjectId, baseObjectType, ID } = relationDraftEntries[eachRelation];
+            await srv.discard(HDMObjects.drafts, { baseObjectId,baseObjectType })    // activate draft
+            await srv.discard(HDMRelations.drafts, { ID })  
         }
              
     })
