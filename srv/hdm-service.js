@@ -71,37 +71,40 @@ const { data } = require("@sap/cds/lib/dbs/cds-deploy");
 module.exports = (srv) => {
     const { HDMObjects, HDMRelations } = srv.entities;
     srv.on("createDocumentWithLink", async (req) => {
-        try{
-        const { data: inputData} = req.data;
-        const {businessObjectType, businessObjectId, baseObjectType } = inputData;
+        try {   
+            const { data: inputData} = req.data;
+            const {businessObjectType, businessObjectId, baseObjectType } = inputData;
 
-        const baseObjectId = cds.utils.uuid();
-        delete inputData.businessObjectId;
-        delete inputData.businessObjectType;
+            const baseObjectId = cds.utils.uuid();
+            delete inputData.businessObjectId;
+            delete inputData.businessObjectType;
 
-        let draft;
 
-        cds.tx (async() => {
-             await srv.new(HDMObjects.drafts, {
-               ...inputData,
-               baseObjectId
+            let draft;
+            await cds.tx(req).run(async (tx) => {
+                const hdmService = await cds.connect.to('com.sap.hdm.HDMService'); // your service name here
+                const srv = hdmService.tx(tx); // bind service to transaction
+
+                await srv.new(HDMObjects.drafts, {
+                    ...inputData,
+                    baseObjectId,
+                });
+
+                draft = await srv.new(HDMRelations.drafts, {
+                    baseObjectId,
+                    baseObjectType,
+                    businessObjectType,
+                    businessObjectId
+                });
             });
-      
-        draft = await srv.new(HDMRelations.drafts, {
-                baseObjectId,
-                baseObjectType,
-                businessObjectType,
-                businessObjectId
-            })
-        })
-       
 
-        return draft;
-    }catch(err){
-        console.log("🚀 ~ srv.on ~ err:", err)
-        
-    }
-    });
+            return draft;
+
+        }catch(err){
+            console.log("🚀 ~ srv.on ~ err:", err);
+            req.error(500, "Failed to create linked drafts.");      
+        }
+        });
 
     srv.on("updateDocumentWithLink", async (req) => {
        const { data: inputData} = req.data;
