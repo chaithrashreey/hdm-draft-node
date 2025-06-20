@@ -17,6 +17,8 @@ entity HDMRelations :cuid, managed {
         hdmObject         : Association to HDMObjects
                                  on  hdmObject.baseObjectType = baseObjectType
                                  and hdmObject.baseObjectId   = baseObjectId @assert.integrity;
+      isRelationLocked:   Boolean;
+      isUnlinked:  Boolean;                           
 }
 /*
 Leading Application:
