@@ -21,18 +21,46 @@ service HDMService {
   entity HDMRelations     as projection on hdm.HDMRelations;
   entity HDMObjects as projection on hdm.HDMObjects;
   
+  //Operations when BO is created. BO itself is in draft mode.
   action createDocumentWithLink(data: createDocumentWithLinkInput) returns response;
   action updateDocumentWithLink(data: updateDocumentWithLinkInput) returns response;
   action saveDocumentWithLink(businessObjectId:UUID, businessObjectType: String ) returns response;
   action discardDocumentWithLink(businessObjectId:UUID, businessObjectType: String) returns response;
-  action editLink(businessObjectId:UUID, businessObjectType: String) returns response;
-  action editLinkWithDocument(businessObjectId:UUID, businessObjectType: String) returns response;
-  action linkDocument(usinessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String);
+
+  //Question ?? So the plugin should be somehow able to identify if a new BO being edited or an existing active BO being edited.
+  //Operations when active BO goes into edit mode
+  // If the active BO is already in draft mode and the user comes back, then need to check isRelationsDraftEnabled and do not call the editLinks again
+  action editLinks(businessObjectId:UUID, businessObjectType: String) returns response; 
+
+  //Called when the active BO in edit mode is saved
+  action saveLinks(businessObjectId:UUID, businessObjectType: String) returns response;
+  action dicardLinks(businessObjectId:UUID, businessObjectType: String) returns response;
+
+  action editDocument(baseObjectId:UUID, baseObjectType: String) returns response; //Question ? So here should we be able to edit the document without editing the Business Object?
+  action freezeDocument(baseObjectId:UUID, baseObjectType: String) returns response; 
+  action unfreezeDocument(baseObjectId:UUID, baseObjectType: String) returns response; 
+
+  action linkDocument(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
+  action unlinkDocument(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;//Question ? Should unlinking happen in draft mode as well?
+  action freezeLink(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
+  action unfreezeLink(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
+  
+ //Based on isUnlinked Boolean either we save the draft to active table or discard the draft and delete the active Relation.
+  action saveLinkedDocument(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
+
+
+  //action saveLink(businessObjectId:UUID, businessObjectType: String) fetch all the relations for this busineessObject in draft mode and save them.
+  //action saveUnlink ?
+  //action saveDocument(baseObjectId) save the document data alone.
+
+  //Question?
+  //What do we mean by lock, the draft is created by user A, and only user A will be able to edit the draft, is that what we mean by lock?
 }
 
 type response {
     status  : Integer;
-    message : {};
+    message: String;
+    data : {};
 }
 
 type createDocumentWithLinkInput {
