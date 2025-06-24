@@ -11,8 +11,8 @@ entity Relations : cuid, managed {
     businessObjectId     : String(90); //Sales OrderID 'SO123', Purchase Order ID, 'POC123'etc.
     //baseType     : BaseType;//F,D
     documentId           : String(36); // ID of the document, e.g. '123e4567-e89b-12d3-a456-426614174000'
-    isLocked             : Boolean;
-    isUnlinked           : Boolean;
+    isLocked             : Boolean default false;
+    isUnlinked           : Boolean default false;
     // Association to HDMObjects
     document             : Association to Documents
                                on document.ID = documentId

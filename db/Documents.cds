@@ -18,7 +18,7 @@ entity Documents : cuid, managed {
   owner                 : String(12);
   // externalId             : String(100); // to be discussed
   size                  : Decimal(12); // size in bytes
-  isLocked              : Boolean; // true/false
+  isLocked              : Boolean default false; // true/false
 
   //Additional fields addded
   contentStreamFileName : String(255); // Name of the content stream file, e.g. 'document.pdf'
