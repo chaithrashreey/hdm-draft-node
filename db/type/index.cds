@@ -1,3 +1,2 @@
-using from './BaseObjectType';
-using from './ObjectRelationStatus';
-using from './VersionAction';
+using from './BaseType';
+using from './MimeTypePolicy';

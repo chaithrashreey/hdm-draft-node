@@ -1,4 +1,4 @@
-namespace com.sap.hdm;
+namespace com.sap.hdm.v1;
 
 using {com.sap.hdm as hdm} from '../db/';
 
@@ -12,39 +12,46 @@ using {com.sap.hdm as hdm} from '../db/';
   The actions are bound to the HDMRelations entity, which is shown below.
 
 */
+@path: 'hdm-old'
+service HDMServiceOld {
+  //entity ListAllHDMRelations as projection on hdm.RelationsView;
 
-@path: 'hdm'
-service HDMService {
-  entity ListAllHDMRelations as projection on hdm.HDMRelationsView;
 
   
-  entity HDMRelations     as projection on hdm.HDMRelations;
-  entity HDMObjects as projection on hdm.HDMObjects;
-  
-  //Operations when BO is created. BO itself is in draft mode.
-  action createDocumentWithLink(data: createDocumentWithLinkInput) returns response;
-  action updateDocumentWithLink(data: updateDocumentWithLinkInput) returns response;
-  action saveDocumentWithLink(businessObjectId:UUID, businessObjectType: String ) returns response;
-  action discardDocumentWithLink(businessObjectId:UUID, businessObjectType: String) returns response;
+  //Operations when BO is newly created. BO itself is in draft mode Or a new Document is getting created.
+  action createDocumentsWithLinks(data: createDocumentWithLinkInput) returns response; //Recieving an array of objects.
+  action updateDocumentsWithLinks(data: updateDocumentWithLinkInput) returns response;
+  action saveDocumentsWithLinks(businessObjectId:UUID, businessObjectType: String ) returns response;
+  action discardDocumentsWithLinks(businessObjectId:UUID, businessObjectType: String) returns response;
 
   //Question ?? So the plugin should be somehow able to identify if a new BO being edited or an existing active BO being edited.
-  //Operations when active BO goes into edit mode
+  //--Answer: In the ListAPI we can pass these parameters: isRelationInDraft: Boolean, isDocumentInDraft: Boolean. 
+  //If both are false then the BO is a frsh copy no active
+  //Operations when active BO goes into edit mode 
   // If the active BO is already in draft mode and the user comes back, then need to check isRelationsDraftEnabled and do not call the editLinks again
   action editLinks(businessObjectId:UUID, businessObjectType: String) returns response; 
 
   //Called when the active BO in edit mode is saved
   action saveLinks(businessObjectId:UUID, businessObjectType: String) returns response;
-  action dicardLinks(businessObjectId:UUID, businessObjectType: String) returns response;
+  action discardLinks(businessObjectId:UUID, businessObjectType: String) returns response;
 
+
+  action freezeLink(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
+  action unfreezeLink(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
+
+  action saveFreezeLinkStatus(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
+  
   action editDocument(baseObjectId:UUID, baseObjectType: String) returns response; //Question ? So here should we be able to edit the document without editing the Business Object?
   action freezeDocument(baseObjectId:UUID, baseObjectType: String) returns response; 
   action unfreezeDocument(baseObjectId:UUID, baseObjectType: String) returns response; 
+  action saveFreezeDocumentStatus(baseObjectId:UUID, baseObjectType: String);
 
+  //Referencing to a new businessObject altogether.
   action linkDocument(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
+
+  //Referencing to the same businessObject.
   action unlinkDocument(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;//Question ? Should unlinking happen in draft mode as well?
-  action freezeLink(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
-  action unfreezeLink(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
-  
+
  //Based on isUnlinked Boolean either we save the draft to active table or discard the draft and delete the active Relation.
   action saveLinkedDocument(businessObjectId:UUID, businessObjectType: String, baseObjectId:UUID, baseObjectType: String) returns response;
 

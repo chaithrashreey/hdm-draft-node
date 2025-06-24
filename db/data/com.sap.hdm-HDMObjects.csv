@@ -1,3 +1,0 @@
-baseObjectType,baseObjectId,versionId,revisionId,documentTypeId,objectName,objectStatus,objectUri,physicalDocumentId,mimeType,objectSize,objectState,parentFolderPathValue,parentFolderId,extDocID
-"D","db969c86-addd-4203-8917-e1b81865b93b",VS001,001,Order,Order Document,A,/uri/order/BASE001,DOC001,application/pdf,1024,A,/folder/orders,FOLDER001,EXT001
-"D","35ad4333-5525-4e09-b145-0f1b85aff364",VS002,002,Invoice,Invoice Document,A,/uri/invoice/BASE002,DOC002,application/pdf,2048,A,/folder/invoices,FOLDER002,EXT002

@@ -1,2 +1,2 @@
-using from './HDMRelationsView';
-using from './HDMRelationsCountView';
+using from './RelationsView';
+using from './RelationsCountView';

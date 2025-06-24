@@ -1,0 +1,5 @@
+ID,createdAt,createdBy,modifiedAt,modifiedBy,baseType,name,mimeType,documentTypeId,description,owner,size,isLocked,contentStreamFileName,contentStreamURI,versionId
+e8b1a2c3-9d4f-4a5b-8c7d-1234567890ab,2024-06-01T10:00:00Z,user1,2024-06-01T10:00:00Z,user1,MAIN,Project Plan,pdf,TECHSPEC,"Project plan for Q2",USR001,102400,false,project_plan.pdf,https://fileserver/documents/e8b1a2c3-9d4f-4a5b-8c7d-1234567890ab,1.0
+f9c2b3d4-8e5a-4b6c-9d0e-2345678901bc,2024-06-02T11:30:00Z,user2,2024-06-02T11:30:00Z,user2,MAIN,Architecture Diagram,png,ACD,"System architecture diagram",USR002,204800,false,architecture.png,https://fileserver/documents/f9c2b3d4-8e5a-4b6c-9d0e-2345678901bc,1.0
+a3d4e5f6-7b8c-4d9e-0f1a-3456789012cd,2024-06-03T09:15:00Z,user3,2024-06-03T09:15:00Z,user3,MAIN,Requirements,docx,REQ,"Requirements document",USR003,51200,true,requirements.docx,https://fileserver/documents/a3d4e5f6-7b8c-4d9e-0f1a-3456789012cd,2.0
+b4e5f6a7-8c9d-4e0f-1a2b-4567890123de,2024-06-04T14:45:00Z,user4,2024-06-04T14:45:00Z,user4,MAIN,Test Cases,xlsx,TEST,"Test cases for release",USR004,30720,false,test_cases.xlsx,https://fileserver/documents/b4e5f6a7-8c9d-4e0f-1a2b-4567890123de,1.1

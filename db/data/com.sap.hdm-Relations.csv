@@ -1,0 +1,6 @@
+ID,businessObjectTypeId,businessObjectId,documentId,isLocked,createdAt,createdBy,modifiedAt,modifiedBy
+a1f2c3e4-1111-4b5c-8d9e-1234567890ab,SalesOrder,SO123,e8b1a2c3-9d4f-4a5b-8c7d-1234567890ab,false,2024-06-01T10:05:00Z,user1,2024-06-01T10:05:00Z,user1
+b2e3d4f5-2222-4c6d-9e0f-2345678901bc,SalesOrder,SO123,f9c2b3d4-8e5a-4b6c-9d0e-2345678901bc,false,2024-06-01T10:10:00Z,user2,2024-06-01T10:10:00Z,user2
+c3f4e5a6-3333-4d7e-0f1a-3456789012cd,PurchaseOrder,POC123,e8b1a2c3-9d4f-4a5b-8c7d-1234567890ab,true,2024-06-02T11:00:00Z,user3,2024-06-02T11:00:00Z,user3
+d4a5b6c7-4444-4e8f-1a2b-4567890123de,PurchaseOrder,POC124,a3d4e5f6-7b8c-4d9e-0f1a-3456789012cd,false,2024-06-03T09:20:00Z,user4,2024-06-03T09:20:00Z,user4
+e5b6c7d8-5555-4f9a-2b3c-5678901234ef,Invoice,INV789,b4e5f6a7-8c9d-4e0f-1a2b-4567890123de,false,2024-06-04T14:50:00Z,user5,2024-06-04T14:50:00Z,user5

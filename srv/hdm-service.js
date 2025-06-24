@@ -13,7 +13,7 @@ module.exports = (srv) => {
 
             let draft;
             await cds.tx(req).run(async (tx) => {
-                const hdmService = await cds.connect.to('com.sap.hdm.HDMService'); // your service name here
+                const hdmService = await cds.connect.to('com.sap.hdm.HDMServiceOld'); // your service name here
                 const srv = hdmService.tx(tx); // bind service to transaction
 
                 await srv.new(HDMObjects.drafts, {
@@ -50,7 +50,7 @@ module.exports = (srv) => {
             });
 
             await cds.tx(req).run(async (tx) => {
-                const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
+                const hdmService = await cds.connect.to('com.sap.hdm.HDMServiceOld');
                 const srv = hdmService.tx(tx); 
 
                 //Question do we need to update the updatedAt/modifiedAt timestamp for relations as well ?
@@ -106,7 +106,7 @@ module.exports = (srv) => {
             try {
                 //Each doc with it's relation is stored as one transaction
                 await cds.tx(req).run(async (tx) => {
-                    const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
+                    const hdmService = await cds.connect.to('com.sap.hdm.HDMServiceOld');
                     const srv = hdmService.tx(tx); // bind service to transaction
 
                     await srv.save(HDMObjects.drafts, { baseObjectId,baseObjectType })    // activate draft
@@ -134,7 +134,7 @@ module.exports = (srv) => {
             const { baseObjectId, baseObjectType, ID } = relationDraftEntries[eachRelation];
             try {
                 await cds.tx(req).run(async (tx) => { 
-                    const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
+                    const hdmService = await cds.connect.to('com.sap.hdm.HDMServiceOld');
                     const srv = hdmService.tx(tx); // bind service to transaction
 
                     await srv.discard(HDMObjects.drafts, { baseObjectId,baseObjectType });    // discard draft
