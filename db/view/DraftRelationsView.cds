@@ -1,6 +1,28 @@
 //<-------View on drafts table is not possible----------->
 
 
+// 💥 CAP Limitation: .drafts is NOT accessible in CDS view definitions
+// Even though:
+
+// @odata.draft.enabled is present ✅
+
+// Relations.drafts exists ✅
+
+// You’re importing from the core model ✅
+
+// You’ve done cds build --clean, compile . --to json, etc ✅
+
+// You still cannot reference Relations.drafts in a define view.
+
+// That’s because .drafts is a CAP compiler artifact — not a standalone CDS artifact. It:
+
+// Exists only in runtime, not as a first-class definition
+
+// Is not accessible in CDS views (via define view ... select from)
+
+// Is only usable in JavaScript handlers, or direct queries
+
+
 // namespace com.sap.hdm;
 
 // using {com.sap.hdm.Documents} from '../Documents';
