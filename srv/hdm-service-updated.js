@@ -2,7 +2,7 @@ const cds = require('@sap/cds');
 
 module.exports = (srv) => {
     const { Documents, Relations } = srv.entities;
-    srv.on("createDocumentsWithLinks", async (req) => {
+    srv.on("createDocumentsWithLink", async (req) => {
             const { documentsWithLinks } = req.data;
             let relationsDraftIds = [];
             for (let i in documentsWithLinks) {
@@ -36,88 +36,45 @@ module.exports = (srv) => {
                 }    
             }
 
-        //const fetchedDrafts = await fetchCreatedDrafts(relationsDraftIds);
-
-        //const hdmService = 
-//         const { Relations } = cds.entities('com.sap.hdm');
-
-// console.log("✔️ Relations.drafts is:", Relations.drafts); //
-//         const result = await hdmService.run(
-//         SELECT
-//             .from('com.sap.hdm.HDMService.Relations.drafts', 'hr')
-//             .columns(
-//             { ref: ['hr', 'ID'], as: 'relationId' },
-//             { ref: ['hr', 'documentId'] },
-//             { ref: ['hr', 'businessObjectTypeId'] },
-//             { ref: ['hr', 'businessObjectId'] },
-//             { ref: ['hr', 'isLocked'], as: 'isRelationLocked' }
-//             )
-//             .where({
-//             IsActiveEntity: false,
-//             ID: { in: relationsDraftIds }
-//             })
-// );
-
-
-// <---------- This Works --------------->
-// const result = await cds.run(
-//   SELECT
-//     .from('com.sap.hdm.HDMService.Relations.drafts')
-//     .columns(
-//       { ref: ['documentId'], as: 'relationId'}  
-//     )
-//     .where({ ID: { in : relationsDraftIds} })
-// );
-
-
-//     console.log("🚀 ~ fetchCreatedDrafts ~ result:", result);
-    const db = await cds.connect.to('db');
-    const placeholders = relationsDraftIds.map(() => '?').join(',');        
-     const query = `
-  SELECT
-    hr.ID AS relationId,
-    hr.documentId,
-    hr.businessObjectId,
-    do.name AS documentName,
-    do.mimeType,
-    hr.IsActiveEntity
-  FROM
-    com_sap_hdm_HDMService_Relations_drafts AS hr
-  LEFT JOIN
-    com_sap_hdm_HDMService_Documents_drafts AS do
-    ON hr.documentId = do.ID
-  WHERE
-    hr.ID IN (${placeholders})
-`;
-
-const result = await db.run(query, relationsDraftIds);       
-    return result;
-        });
+        const draftsCreated = await fetchDocumentWithLinkDrafts(relationsDraftIds);
+        return draftsCreated;
+        });   
 }
 
-async function fetchCreatedDrafts(relationsDraftIds) {
+async function fetchDocumentWithLinkDrafts(relationsDraftIds) {
     try{
-    const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
-    const result = await hdmService.run(
-    SELECT
-      .from(Relations.drafts, hr)
-      .columns(
-        { ref: ['hr.ID'], as: 'relationId' },
-        { ref: ['hr.documentId'] },
-        { ref: ['hr.businessObjectTypeId'] },
-        { ref: ['hr.businessObjectId'] },
-        { ref: ['hr.isLocked'], as: 'isRelationLocked' }
-      )
-      .where({
-        'hr.IsActiveEntity': false,
-        'hr.ID': { in: relationsDraftIds }
-      })
-  );
-
-  console.log("🚀 ~ fetchCreatedDrafts ~ result:", result);
-  return result;
+        const db = await cds.connect.to('db');
+        const placeholders = relationsDraftIds.map(() => '?').join(',');        
+        const query = `
+            SELECT
+                hr.ID,
+                hr.businessObjectTypeId,
+                hr.businessObjectId,
+                hr.documentId,
+                hr.isLocked AS isRelationLocked,
+                do.baseType,
+                do.name,
+                do.mimeType,
+                do.documentTypeId,
+                do.description,
+                do.owner,
+                do.size,
+                do.isLocked  AS isDocumentLocked,
+                do.contentStreamFileName,
+                do.contentStreamURI,
+                do.versionId
+            FROM
+                com_sap_hdm_HDMService_Relations_drafts AS hr
+            LEFT JOIN
+                com_sap_hdm_HDMService_Documents_drafts AS do
+                ON hr.documentId = do.ID
+            WHERE
+                hr.ID IN (${placeholders});    
+            `;
+        const result = await db.run(query, relationsDraftIds) || [];
+        return result;
     }catch(err){
-        console.log("🚀 ~ fetchCreatedDrafts ~ err:", err)        
+        console.log("Error while fetching drafts", err)        
     }
   
 }

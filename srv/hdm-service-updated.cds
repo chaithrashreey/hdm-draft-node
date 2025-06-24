@@ -15,5 +15,5 @@ service HDMService {
     @odata.draft.enabled
     entity Documents                 as projection on hdm.Documents;
 
-    action createDocumentsWithLinks(documentsWithLinks : array of RelationsWithDocuments) returns array of RelationsWithDocuments;
+    action createDocumentsWithLink(documentsWithLinks : array of RelationsWithDocuments) returns array of RelationsWithDocuments;
 }
