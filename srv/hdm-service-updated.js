@@ -5,7 +5,7 @@ module.exports = (srv) => {
     srv.on("createDocumentsWithLink", async (req) => {
         const { documentsWithLinks } = req.data;
         let relationsDraftIds = [];
-        //To check: If draft creation of one doc fails, does all the draft creation tranaction get reverted?
+        //To check: If draft creation of one doc fails, does all the draft creation transaction get reverted?
         for (let i in documentsWithLinks) {
             const eachDocWithLink = documentsWithLinks[i];
             const {businessObjectTypeId, businessObjectId } = eachDocWithLink;
@@ -178,6 +178,95 @@ module.exports = (srv) => {
                 status: 500,
                 mesasge: "Error while creating linkDrafts"
             }
+        }
+      })
+
+      srv.on("draftEditDocument", async(req) => {
+        try {
+            const { documentId } = req.data;
+            await srv.edit(Documents, { ID: documentId});        
+            return {
+                status: 200,
+                message: "Documents Drafts created successfully!!"
+            }
+        } catch(err){
+            console.log("🚀 ~ srv.on ~ err:", err);
+            return {
+                status: 500,
+                mesasge: "Error while creating linkDrafts"
+            }
+        }
+      })
+
+      srv.on("linkDocument", async(req) => {
+        try {
+            const { businessObjectTypeId, businessObjectId, documentId } = req.data;
+            const activeDocExists = await srv.exists(Documents, { ID: documentId });
+            if(activeDocExists){
+                await srv.new(Relations.drafts, {
+                        documentId,
+                        businessObjectTypeId,
+                        businessObjectId
+                    });     
+                return {
+                    status: 200,
+                    message: "Documents Drafts created successfully!!"
+                }
+            }else{
+                return {
+                    status: 500,
+                    message: "There is no active document to link!"
+                }
+            }          
+        } catch(err){
+            console.log("🚀 ~ srv.on ~ err:", err);
+            return {
+                status: 500,
+                mesasge: "Error while creating linkDrafts"
+            }
+        }
+      });
+
+      srv.on("unlinkDocument", async(req) => {
+        try {
+            const { ID } = req.data;
+                
+            return {
+                status: 200,
+                message: "Document Unlinked successfully!!"
+            }          
+        } catch (err) {
+            console.log("🚀 ~ srv.on ~ err:", err);
+            return {
+                status: 500,
+                mesasge: "Error while creating linkDrafts"
+            }
+        }
+      });
+
+      srv.on("freezeDocument", async(req) => {
+        try {
+        //updateIsLocked
+        } catch(err) {
+
+        }
+
+      });
+
+      srv.on("unfreezeDocument", async (req) => {
+        try {
+        //updateIsLocked
+        } catch(err) {
+
+        }
+      });
+
+      srv.on("updateActivatedRelation", async (req) => {
+        //No need to add validation on Activate draft as of now.
+        try {
+            //updateIsBoActivated + update businessObjectId
+        } catch(err) {
+
         }
       })
 }
