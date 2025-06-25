@@ -5,6 +5,7 @@ module.exports = (srv) => {
     srv.on("createDocumentsWithLink", async (req) => {
             const { documentsWithLinks } = req.data;
             let relationsDraftIds = [];
+            //To check: If draft creation of one doc fails, does all the draft creation tranaction get reverted?
             for (let i in documentsWithLinks) {
                 const eachDocWithLink = documentsWithLinks[i];
                 const {businessObjectTypeId, businessObjectId } = eachDocWithLink;
@@ -31,7 +32,7 @@ module.exports = (srv) => {
                         const { ID: relationId } = relationDraft;
                         relationsDraftIds.push(relationId)
                     });
-                }catch(err) {
+                } catch(err) {
                     req.error(500, "Failed to create linked drafts.");    
                 }    
             }
@@ -39,6 +40,45 @@ module.exports = (srv) => {
         const draftsCreated = await fetchDocumentWithLinkDrafts(relationsDraftIds);
         return draftsCreated;
         });   
+
+      srv.on("updateDocumentWithLink", async (req) => {
+             try {
+                 const { documentWithLink} = req.data;
+                 const { documentId } = documentWithLink;
+                 delete documentWithLink.documentId;
+                 delete documentWithLink.baseType;
+     
+                 const relationDraft = await SELECT.from(Relations.drafts).where({ documentId });
+                 const { ID } = relationDraft[0];
+                 await cds.tx(req).run(async (tx) => {
+                     const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
+                     const srv = hdmService.tx(tx); 
+     
+                     //Question do we need to update the updatedAt/modifiedAt timestamp for relations as well ?
+                     await srv.update(Relations.drafts).set({
+                         modifiedAt: new Date()
+                     }).where({ 
+                         ID,
+                         IsActiveEntity: false,
+                         'DraftAdministrativeData.InProcessByUser': req.user.id
+                     });
+     
+                     await srv.update(Documents.drafts).set({
+                         ...documentWithLink,
+                         modifiedAt: new Date()
+                     }).where({ 
+                         ID: documentId,
+                         IsActiveEntity: false,
+                         'DraftAdministrativeData.InProcessByUser': req.user.id
+                     });
+                 });
+         
+                const updatedDraft = await fetchDocumentWithLinkDrafts([ID]);                 
+                return updatedDraft;
+             } catch(err){
+                 req.error(500, "Failed to update drafts.",err);   
+             }        
+         });   
 }
 
 async function fetchDocumentWithLinkDrafts(relationsDraftIds) {
@@ -62,15 +102,20 @@ async function fetchDocumentWithLinkDrafts(relationsDraftIds) {
                 do.isLocked  AS isDocumentLocked,
                 do.contentStreamFileName,
                 do.contentStreamURI,
-                do.versionId
+                do.versionId,
+                do.createdAt
             FROM
                 com_sap_hdm_HDMService_Relations_drafts AS hr
             LEFT JOIN
                 com_sap_hdm_HDMService_Documents_drafts AS do
                 ON hr.documentId = do.ID
             WHERE
-                hr.ID IN (${placeholders});    
+                hr.ID IN (${placeholders}) 
+            ORDER BY
+                do.createdAt ASC    
             `;
+        //CreatedAt seems to be exactly same for all the documents, so we cannot return the documents in same order as it was shared with us from UI
+        //TODO: probably we can add a slight delay like 5-10s between creation of each draft so we can have proper order of creation   
         const result = await db.run(query, relationsDraftIds) || [];
         return result;
     }catch(err){
@@ -78,81 +123,5 @@ async function fetchDocumentWithLinkDrafts(relationsDraftIds) {
     }
   
 }
-
-// module.exports = (srv) => {
-//   srv.on("createDocumentsWithLinks", async (req) => {
-//     const { documentsWithLinks } = req.data;
-//     let relationsDraftIds = [];
-
-//     try {
-//       await cds.tx(req).run(async (tx) => {
-//         const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
-//         const boundService = hdmService.tx(tx);
-
-//         for (let eachDocWithLink of documentsWithLinks) {
-//           const { businessObjectTypeId, businessObjectId } = eachDocWithLink;
-
-//           delete eachDocWithLink.businessObjectId;
-//           delete eachDocWithLink.businessObjectTypeId;
-
-//           // 💡 Use entity name string instead of entity object
-//           const docDraftCreated = await boundService.new('com.sap.hdm.Documents.drafts', {
-//             ...eachDocWithLink
-//           });
-
-//           const relationDraft = await boundService.new('com.sap.hdm.Relations.drafts', {
-//             documentId: docDraftCreated.ID,
-//             businessObjectTypeId,
-//             businessObjectId
-//           });
-
-//           relationsDraftIds.push(relationDraft.ID);
-//         }
-//       });
-//     } catch (err) {
-//       console.error("💥 Error creating drafts:", err);
-//       return req.error(500, "Failed to create linked drafts.");
-//     }
-
-//     // 🔁 Now fetch them
-//     try {
-//       const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
-//       const result = await hdmService.run(
-//         SELECT
-//           .from('com.sap.hdm.Relations.drafts as hr')
-//           .columns(
-//             { ref: ['hr.ID'], as: 'relationId' },
-//             { ref: ['hr.documentId'] },
-//             { ref: ['hr.businessObjectTypeId'] },
-//             { ref: ['hr.businessObjectId'] },
-//             { ref: ['hr.isLocked'], as: 'isRelationLocked' },
-//             { ref: ['do.baseType'] },
-//             { ref: ['do.name'] },
-//             { ref: ['do.mimeType'] },
-//             { ref: ['do.documentTypeId'] },
-//             { ref: ['do.description'] },
-//             { ref: ['do.owner'] },
-//             { ref: ['do.size'] },
-//             { ref: ['do.isLocked'], as: 'isDocumentLocked' },
-//             { ref: ['do.contentStreamFileName'] },
-//             { ref: ['do.contentStreamURI'] },
-//             { ref: ['do.versionId'] }
-//           )
-//           .leftJoin('com.sap.hdm.Documents.drafts as do').on('hr.documentId = do.ID')
-//           .where({
-//             'hr.IsActiveEntity': false,
-//             'hr.ID': { in: relationsDraftIds }
-//           })
-//       );
-//       return result;
-//     } catch (e) {
-//       console.error("⚠️ Drafts created, but fetching failed:", e.message);
-//       return {
-//         message: "Drafts created successfully, but fetching them failed.",
-//         relationIds: relationsDraftIds
-//       };
-//     }
-//   });
-// };
 
  

@@ -8,12 +8,14 @@ using {com.sap.hdm as hdm} from '../db/';
 @path: 'hdm'
 service HDMService {
     @readonly
-    entity RelationsWithDocuments as projection on RelationsView;
+    entity RelationWithDocument as projection on RelationsView;
 
     @odata.draft.enabled
     entity Relations              as projection on hdm.Relations;
     @odata.draft.enabled
     entity Documents                 as projection on hdm.Documents;
 
-    action createDocumentsWithLink(documentsWithLinks : array of RelationsWithDocuments) returns array of RelationsWithDocuments;
+    action createDocumentsWithLink(documentsWithLinks : array of RelationWithDocument) returns array of RelationWithDocument;
+    action updateDocumentWithLink(documentWithLink: RelationWithDocument) returns RelationWithDocument;
+
 }
