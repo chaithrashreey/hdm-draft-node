@@ -18,4 +18,14 @@ service HDMService {
     action createDocumentsWithLink(documentsWithLinks : array of RelationWithDocument) returns array of RelationWithDocument;
     action updateDocumentWithLink(documentWithLink: RelationWithDocument) returns RelationWithDocument;
 
+    action draftEditLinks(businessObjectTypeId : String(30), businessObjectId : String(90)) returns response;
+
+    action draftActivate(businessObjectTypeId : String(30), businessObjectId : String(90)) returns array of RelationWithDocument;
+    action draftDiscard(businessObjectTypeId : String(30), businessObjectId : String(90)) returns response;
+
+}
+
+type response {
+    status  : Integer;
+    message: String;
 }
