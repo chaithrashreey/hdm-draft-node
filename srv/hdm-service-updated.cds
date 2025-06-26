@@ -23,10 +23,10 @@ service HDMService {
     action draftEditDocument(documentId: UUID) returns response;
 
     action linkDocument(businessObjectTypeId : String(30), businessObjectId : String(90), documentId: UUID) returns response;
-    action unlinkDocument(businessObjectTypeId : String(30), businessObjectId : String(90), documentId: UUID) returns response;
+    action unlinkDocument(id: UUID) returns response;
 
     action freezeDocument(documentId: UUID) returns response;
-    action unFreezeDocument(documentId: UUID) returns response;
+    action unfreezeDocument(documentId: UUID) returns response;
 
     action draftActivate(businessObjectTypeId : String(30), businessObjectId : String(90)) returns array of RelationWithDocument;
     action draftDiscard(businessObjectTypeId : String(30), businessObjectId : String(90)) returns response;

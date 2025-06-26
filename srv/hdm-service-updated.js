@@ -1,7 +1,9 @@
 const cds = require('@sap/cds');
 
-module.exports = (srv) => {
+module.exports = async(srv) => {
     const { Documents, Relations } = srv.entities;
+    const db = await cds.connect.to('db');
+
     srv.on("createDocumentsWithLink", async (req) => {
         const { documentsWithLinks } = req.data;
         let relationsDraftIds = [];
@@ -85,7 +87,7 @@ module.exports = (srv) => {
             const { businessObjectTypeId, businessObjectId} = req.data;
             const relationDraftEntries = await SELECT.from(Relations.drafts).where({ businessObjectId, businessObjectTypeId });              
             for(let eachRelation in relationDraftEntries){
-                const { ID, documentId } = relationDraftEntries[eachRelation];
+                const { ID, documentId, isUnlinked: isRelationUnlinked } = relationDraftEntries[eachRelation];
                 try {
                     await cds.tx(req).run(async (tx) => {
                         const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
@@ -95,9 +97,26 @@ module.exports = (srv) => {
                         if (docDraftExists) {
                             await srv.save(Documents.drafts, { ID: documentId }); // activate draft
                         }
-                        await srv.save(Relations.drafts, { ID }); 
+
+                        if(isRelationUnlinked){
+                            await srv.discard(Relations.drafts, { ID });
+                            const deleteRelationQuery = `DELETE FROM com_sap_hdm_Relations WHERE ID = ?`;
+                            await db.run(deleteRelationQuery, [ID]);     //Delete relation from active Table
+
+                            const relationNoQuery = `SELECT COUNT(*) as count FROM com_sap_hdm_Relations WHERE documentId = ?`;
+                            const result =  await db.run(relationNoQuery, [documentId]);
+                            const noOfRelations = result[0]?.count || 0;
+                            if(noOfRelations == 0) {
+                                const deleteDocQuery = `DELETE FROM com_sap_hdm_Documents WHERE ID = ?`
+                                await db.run(deleteDocQuery, [documentId]); 
+                            }
+                        }else {
+                            await srv.save(Relations.drafts, { ID }); 
+                        }
+                        
                     })
                 } catch(err) {
+                        console.log("🚀 ~ srv.on ~ err:", err)
                         req.error(500, "Failed to save linked drafts.");    
                 }         
             }   
@@ -210,7 +229,7 @@ module.exports = (srv) => {
                     });     
                 return {
                     status: 200,
-                    message: "Documents Drafts created successfully!!"
+                    message: "Documents linked successfully!!"
                 }
             }else{
                 return {
@@ -222,15 +241,23 @@ module.exports = (srv) => {
             console.log("🚀 ~ srv.on ~ err:", err);
             return {
                 status: 500,
-                mesasge: "Error while creating linkDrafts"
+                mesasge: "Error while linking Document"
             }
         }
       });
 
       srv.on("unlinkDocument", async(req) => {
         try {
-            const { ID } = req.data;
-                
+            const { id: ID } = req.data;
+            const db = await cds.connect.to('db');
+
+            const updateQuery = `
+            UPDATE com_sap_hdm_HDMService_Relations_drafts
+            SET isUnlinked = 1
+            WHERE ID = ?
+            `;
+
+            await db.run(updateQuery, [ID]);  
             return {
                 status: 200,
                 message: "Document Unlinked successfully!!"
@@ -239,25 +266,58 @@ module.exports = (srv) => {
             console.log("🚀 ~ srv.on ~ err:", err);
             return {
                 status: 500,
-                mesasge: "Error while creating linkDrafts"
+                mesasge: "Error while unlinking the Document"
             }
         }
       });
 
       srv.on("freezeDocument", async(req) => {
         try {
-        //updateIsLocked
-        } catch(err) {
+        const { documentId } = req.data;
+            const db = await cds.connect.to('db');
 
+            const updateQuery = `
+            UPDATE com_sap_hdm_HDMService_Documents_drafts
+            SET isLocked = 1
+            WHERE ID = ?
+            `;
+            await db.run(updateQuery, [documentId]); 
+            return {
+                status: 200,
+                message: "Document freezed successfully!!"
+            } 
+        } catch(err) {
+            console.log("🚀 ~ srv.on ~ err:", err);
+            return {
+                status: 500,
+                mesasge: "Error while freezing the Document"
+            }
         }
 
       });
 
       srv.on("unfreezeDocument", async (req) => {
         try {
-        //updateIsLocked
-        } catch(err) {
+            const { documentId } = req.data;
+            const db = await cds.connect.to('db');
 
+            const updateQuery = `
+            UPDATE com_sap_hdm_HDMService_Documents_drafts
+            SET isLocked = 0
+            WHERE ID = ?
+            `;
+
+            await db.run(updateQuery, [documentId]);
+            return {
+                status: 200,
+                message: "Document unfreezed successfully!!"
+            } 
+        } catch(err) {
+            console.log("🚀 ~ srv.on ~ err:", err);
+            return {
+                status: 500,
+                mesasge: "Error while unfreezing the Document"
+            }
         }
       });
 
@@ -277,7 +337,7 @@ async function fetchDocumentWithLinkDrafts(relationsDraftIds) {
         const placeholders = relationsDraftIds.map(() => '?').join(',');        
         const query = `
             SELECT
-                hr.ID,
+                hr.ID as id,
                 hr.businessObjectTypeId,
                 hr.businessObjectId,
                 hr.documentId,
