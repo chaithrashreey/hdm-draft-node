@@ -14,7 +14,8 @@
   },
   "devDependencies": {
     "@cap-js/sqlite": "^2",
-    "@cap-js/cds-types": "^0.10.0"
+    "@cap-js/cds-types": "^0.10.0",
+    "cds-swagger-ui-express": "^0.10.0"
   },
   "scripts": {
     "start": "cds-serve"
@@ -29,6 +30,10 @@
           }
         }
       }
-    }
+    },
+    "folders": {
+    "db": "db",
+    "srv": "srv"
+  } 
   }
 }

@@ -10,7 +10,7 @@ define view RelationsView as
         on hr.documentId = do.ID
     {
             // Columns from Relations
-        key hr.ID,
+        key hr.ID as id,
             hr.businessObjectTypeId,
             hr.businessObjectId,
             hr.documentId,

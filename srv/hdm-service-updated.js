@@ -45,28 +45,25 @@ module.exports = async(srv) => {
 
     srv.on("updateDocumentWithLink", async (req) => {
         try {
-            const { documentWithLink} = req.data;
-            const { documentId } = documentWithLink;
+            const { id } = req.params && req.params[0];
+            const { documentWithLink } = req.data;
             delete documentWithLink.documentId;
             delete documentWithLink.baseType;
 
-            const relationDraft = await SELECT.from(Relations.drafts).where({ documentId });
-            const { ID } = relationDraft[0];
+            const relationDraft = await SELECT.from(Relations.drafts).where({ ID: id });
+            const { ID, documentId } = relationDraft[0];
             await cds.tx(req).run(async (tx) => {
                 const hdmService = await cds.connect.to('com.sap.hdm.HDMService');
                 const srv = hdmService.tx(tx); 
 
-                //Question do we need to update the updatedAt/modifiedAt timestamp for relations as well ?
-                const updateRelationQuery = `
-                UPDATE com_sap_hdm_HDMService_Relations_drafts
-                SET  modifiedAt = ?
-                WHERE ID = ?
-                `;
-                await db.run(updateRelationQuery, [new Date().toISOString(),ID]); 
-
                 const fields = Object.keys(documentWithLink);
                 const setClause = fields.map(field => `${field} = ?`).join(', ');
+                //Draft for doc  exists, create a draft and update/
+                const docDraftExists = await srv.exists(Documents.drafts, { ID: documentId });
 
+                if (!docDraftExists) {
+                    await srv.edit(Documents, { ID: documentId }); // activate draft
+                }
                 const updateQuery = `
                 UPDATE com_sap_hdm_HDMService_Documents_drafts
                 SET ${setClause}, modifiedAt = ?
@@ -135,7 +132,8 @@ module.exports = async(srv) => {
             }
         }
       });
-      
+      //10.5 --> 3 Relation Draft 10.5 , doc 10.10 -->
+      //Try if can have same DraftAdministrative UUID for the same Documents
       srv.on("draftDiscard", async (req) => {
           try{
             const { businessObjectTypeId, businessObjectId} = req.data;
@@ -174,6 +172,7 @@ module.exports = async(srv) => {
 
       srv.on("draftEditLinks", async(req) => {
         try {
+            //Check if can i have DraftAdministrative Data entry for all the relations associated with 
             const { businessObjectTypeId, businessObjectId} = req.data;
             const db = await cds.connect.to('db');
             const query = `SELECT *
@@ -203,22 +202,23 @@ module.exports = async(srv) => {
         }
       })
 
-      srv.on("draftEditDocument", async(req) => {
-        try {
-            const { documentId } = req.data;
-            await srv.edit(Documents, { ID: documentId});        
-            return {
-                status: 200,
-                message: "Documents Drafts created successfully!!"
-            }
-        } catch(err){
-            console.log("🚀 ~ srv.on ~ err:", err);
-            return {
-                status: 500,
-                mesasge: "Error while creating linkDrafts"
-            }
-        }
-      })
+      //Remove this
+    //   srv.on("draftEditDocument", async(req) => {
+    //     try {
+    //         const { documentId } = req.data;
+    //         await srv.edit(Documents, { ID: documentId});        
+    //         return {
+    //             status: 200,
+    //             message: "Documents Drafts created successfully!!"
+    //         }
+    //     } catch(err){
+    //         console.log("🚀 ~ srv.on ~ err:", err);
+    //         return {
+    //             status: 500,
+    //             mesasge: "Error while creating linkDrafts"
+    //         }
+    //     }
+    //   })
 
       srv.on("linkDocument", async(req) => {
         try {
@@ -251,9 +251,7 @@ module.exports = async(srv) => {
 
       srv.on("unlinkDocument", async(req) => {
         try {
-            const { id: ID } = req.data;
-            const db = await cds.connect.to('db');
-
+            const { id: ID } = req.params && req.params[0];
             const updateQuery = `
             UPDATE com_sap_hdm_HDMService_Relations_drafts
             SET isUnlinked = 1
@@ -276,9 +274,14 @@ module.exports = async(srv) => {
 
       srv.on("freezeDocument", async(req) => {
         try {
-        const { documentId } = req.data;
-            const db = await cds.connect.to('db');
+            const { id } = req.params && req.params[0];
+            const relationDraft = await SELECT.from(Relations.drafts).where({ ID: id });
+            const {  documentId } = relationDraft[0];
+            const docDraftExists = await srv.exists(Documents.drafts, { ID: documentId });
 
+            if (!docDraftExists) {
+                await srv.edit(Documents, { ID: documentId }); // activate draft
+            }
             const updateQuery = `
             UPDATE com_sap_hdm_HDMService_Documents_drafts
             SET isLocked = 1
@@ -301,9 +304,14 @@ module.exports = async(srv) => {
 
       srv.on("unfreezeDocument", async (req) => {
         try {
-            const { documentId } = req.data;
-            const db = await cds.connect.to('db');
+            const { id } = req.params && req.params[0];
+            const relationDraft = await SELECT.from(Relations.drafts).where({ ID: id });
+            const {  documentId } = relationDraft[0];
+            const docDraftExists = await srv.exists(Documents.drafts, { ID: documentId });
 
+            if (!docDraftExists) {
+                await srv.edit(Documents, { ID: documentId }); // activate draft
+            }
             const updateQuery = `
             UPDATE com_sap_hdm_HDMService_Documents_drafts
             SET isLocked = 0
