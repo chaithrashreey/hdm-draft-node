@@ -57,26 +57,29 @@ module.exports = async(srv) => {
                 const srv = hdmService.tx(tx); 
 
                 //Question do we need to update the updatedAt/modifiedAt timestamp for relations as well ?
-                await srv.update(Relations.drafts).set({
-                    modifiedAt: new Date()
-                }).where({ 
-                    ID,
-                    IsActiveEntity: false,
-                    'DraftAdministrativeData.InProcessByUser': req.user.id
-                });
+                const updateRelationQuery = `
+                UPDATE com_sap_hdm_HDMService_Relations_drafts
+                SET  modifiedAt = ?
+                WHERE ID = ?
+                `;
+                await db.run(updateRelationQuery, [new Date().toISOString(),ID]); 
 
-                await srv.update(Documents.drafts).set({
-                    ...documentWithLink,
-                    modifiedAt: new Date()
-                }).where({ 
-                    ID: documentId,
-                    IsActiveEntity: false,
-                    'DraftAdministrativeData.InProcessByUser': req.user.id
-                });
+                const fields = Object.keys(documentWithLink);
+                const setClause = fields.map(field => `${field} = ?`).join(', ');
+
+                const updateQuery = `
+                UPDATE com_sap_hdm_HDMService_Documents_drafts
+                SET ${setClause}, modifiedAt = ?
+                WHERE ID = ?
+                `;
+
+                const values = [...fields.map(f => documentWithLink[f]), new Date().toISOString(), documentId];
+
+                await db.run(updateQuery, values);
             });
     
-        const updatedDraft = await fetchDocumentWithLinkDrafts([ID]);                 
-        return updatedDraft;
+            const updatedDraft = await fetchDocumentWithLinkDrafts([ID]);                 
+            return updatedDraft;
         } catch(err){
             req.error(500, "Failed to update drafts.",err);   
         }        
@@ -353,7 +356,8 @@ async function fetchDocumentWithLinkDrafts(relationsDraftIds) {
                 do.contentStreamFileName,
                 do.contentStreamURI,
                 do.versionId,
-                do.createdAt
+                do.createdAt,
+                do.modifiedAt
             FROM
                 com_sap_hdm_HDMService_Relations_drafts AS hr
             LEFT JOIN
